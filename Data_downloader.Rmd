@@ -1,0 +1,77 @@
+---
+title: "Data downloader"
+author: "Michael Callahan"
+date: "2024-04-03"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r downloader}
+#Find the data directory
+library(here)
+library(downloader)
+library(dplyr)
+current_project_path <- here()
+data_dir_path <- file.path(current_project_path, "Data", "Download_directory.csv")
+
+#Read in directory
+data_dir <- read.csv(data_dir_path)
+
+#Single download test
+# url <- data_dir[1,6]
+# filename <- file.path(current_project_path, "Data", "HSC_RNA_1.tsv")
+# if ( ! file.exists ( filename ) ) download ( url , filename )
+# HSC_RNA_1 <- read.delim(filename)
+
+#Loop downloads
+filtered_data_dir <- data_dir %>%
+  filter(Method == "ScriptSeq")
+
+lag_line = ""
+
+for (row in 1:nrow(filtered_data_dir)) {
+  url = filtered_data_dir$processed_url[row]
+  line = filtered_data_dir$Line[row]
+  
+  if(line == lag_line){
+    count = 2
+  } else {
+    count = 1
+  }
+  
+  filename = paste0(line,'_RNA_', count,'.tsv')
+  filename = file.path(current_project_path, "Data", filename)
+  if ( ! file.exists ( filename ) ) download ( url , filename )
+  
+  lag_line = line
+}
+
+```
+
+```{r data loader}
+library(here)
+library(dplyr)
+
+current_project_path <- here()
+
+data_dir_path <- file.path(current_project_path, "Data", "Download_directory.csv")
+data_dir <- read.csv(data_dir_path)
+
+filtered_data_dir <- data_dir %>%
+  filter(Method == "ScriptSeq")
+
+lag_line =c()
+for (row in 1:nrow(filtered_data_dir)) {
+  url = filtered_data_dir$processed_url[row]
+  line = filtered_data_dir$Line[row]
+  
+  filename = filtered_data_dir$file_name[row]
+  mem_name = substr(filename, 1, nchar(filename) - 4)
+  filename = file.path(current_project_path, "Data", filename)
+  data <- read.delim(filename)
+  assign(mem_name, data)
+}
+```
