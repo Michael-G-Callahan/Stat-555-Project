@@ -67,6 +67,26 @@ colData = data.frame(
   )
 ```
 
+## Histogram overlay
+Here, we can see a density plot of the 4 samples being compared.
+```{r EDA}
+library(RColorBrewer)
+tpm_filtered <- tpm[rowSums(tpm != 0) > 0, ]
+samplenames <- colnames(tpm_filtered)
+tpm.cutoff <- log2(0.1)
+nsamples <- ncol(tpm_filtered)
+col <- brewer.pal(nsamples, "Paired")
+par(mfrow=c(1,1))
+plot(density(log(tpm_filtered[,1])), col=col[1], lwd=2, ylim=c(0,0.2), las=2, main="", xlab="")
+title(main="TPM density", xlab="Log-TPM")
+for (i in 2:nsamples){
+den <- density(log(tpm_filtered[,i]))
+lines(den$x, den$y, col=col[i], lwd=2)
+}
+legend("topright", samplenames, text.col=col, bty="n")
+```
+
+
 ## EDA - Heat map
 Here, we look at the TPM (trascripts per million) for our two cell lines (2 replicates each), and we pull out the top 100 genes with the highest variance of expression across samples. Then we plot their normalized expression levels across the samples using a heat map. We should see that the replicates within each cell line should have a more similar expression pattern than across cell lines.
 ```{r preprocess}
@@ -206,6 +226,59 @@ plotRLE(DESeq2::counts(dds, normalized = TRUE),
         main = 'Normalized Counts')
 ```
 
+## Limma-VOOM
+```{r limma voom}
+library(edgeR)
+#Create DGEList object
+d0 <- DGEList(countData)
+
+#Add normalizing factors
+d0 <- calcNormFactors(d0)
+
+#Drop low-expressed genes
+cutoff <- 5
+drop <- which(apply(cpm(d0), 1, max) < cutoff)
+d <- d0[-drop,] 
+dim(d) # number of genes left
+
+
+group = c('CMP', 'CMP', 'CFUE', 'CFUE')
+
+mm <- model.matrix(~group)
+colnames(mm) <- gsub("group", "", colnames(mm))
+print(mm)
+
+y <- voom(d, mm, plot = T)
+fit <- lmFit(y, mm)
+head(coef(fit))
+
+tmp <- eBayes(fit)
+
+top.table <- topTable(tmp, sort.by = "P", n = Inf)
+lv_dif_ex_genes = rownames(head(top.table, 1000))
+```
+
+```{r lv deseq2 compare}
+library(VennDiagram)
+library(gridExtra)
+# extract differential expression results
+DEresults <- results(dds, contrast = c('group', 'CMP', 'CFUE'))
+
+#remove genes with NA values 
+DE <- DEresults[!is.na(DEresults$padj),]
+lowest_pvalue_indexes <- order(DE@listData$pvalue)[1:1000]
+DE2_dif_ex_genes = DE@rownames[lowest_pvalue_indexes]
+
+# Create a Venn diagram
+venn.plot <- venn.diagram(
+  x = list(lv_dif_ex_genes, DE2_dif_ex_genes),
+  category.names = c("Limma-voom" , "DESEQ2"),
+  filename = '#venn_diagramm.png',
+  output=TRUE
+)
+
+```
+
 ## GO term analysis
 
 Simply run this code on a set of genes that are significantly upregulated and then same with downregulated
@@ -236,16 +309,25 @@ dn_reg_gene_names <- rownames(dn_reg_DE)
 dn_reg_gene_names <- sapply(strsplit(dn_reg_gene_names, "\\."), function(x) x[[1]])
 dn_reg_gene_names <- unique(dn_reg_gene_names)
 
-#calculate enriched GO terms - upreg
+#calculate enriched GO terms
 up_go_response <- gost(query = up_reg_gene_names, 
                      organism = 'mmusculus',
                   sources = c("GO"))
-gostplot(up_go_response, capped=FALSE)
+dn_go_response <- gost(query = dn_reg_gene_names, 
+                     organism = 'mmusculus',
+                  sources = c("GO"))
+
+# gostplot(up_go_response, capped=FALSE)
 up_go_results = up_go_response$result
+dn_go_results = dn_go_response$result
+up_go_results <- up_go_results[order(up_go_results$p_value),]
+dn_go_results <- dn_go_results[order(dn_go_results$p_value),]
+# up_go_results <- up_go_results[up_go_results$intersection_size < 100,]
 
-goResults <- goResults[order(goResults$p_value),]
-go <- goResults[goResults$intersection_size < 100,]
+kable(up_go_results[1:10,c(3:11)])
 
-print(goResults)
+kable(dn_go_results[1:10,c(3:11)])
 
+# gostplot(up_go_response, capped = FALSE)
+# gostplot(dn_go_response, capped = FALSE)
 ```
