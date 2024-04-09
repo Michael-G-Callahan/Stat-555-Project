@@ -1,9 +1,0 @@
-INFO [2024-04-09 16:39:53] $x
-INFO [2024-04-09 16:39:53] list(limma_voom = lv_dif_ex_genes, DESEQ2 = DE2_dif_ex_genes)
-INFO [2024-04-09 16:39:53] 
-INFO [2024-04-09 16:39:53] $category.names
-INFO [2024-04-09 16:39:53] c("Limma-voom", "DESEQ2")
-INFO [2024-04-09 16:39:53] 
-INFO [2024-04-09 16:39:53] $filename
-INFO [2024-04-09 16:39:53] NULL
-INFO [2024-04-09 16:39:53] 
