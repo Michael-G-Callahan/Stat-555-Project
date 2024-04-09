@@ -210,8 +210,8 @@ plotRLE(DESeq2::counts(dds, normalized = TRUE),
 
 Simply run this code on a set of genes that are significantly upregulated and then same with downregulated
 
-
-```{r GO analysis}
+#### Find the upregulated and downregulated  gene descriptions
+```{r GO upreg}
 library(DESeq2)
 library(gprofiler2)
 library(knitr)
@@ -222,20 +222,28 @@ DEresults <- results(dds, contrast = c('group', 'CMP', 'CFUE'))
 DE <- DEresults[!is.na(DEresults$padj),]
 #select genes with adjusted p-values below 0.1
 DE <- DE[DE$padj < 0.1,]
-#select genes with absolute log2 fold change above 1 (two-fold change)
-DE <- DE[abs(DE$log2FoldChange) > 1,]
+#select genes with log2 fold change above 1 (two-fold change)
+up_reg_DE <- DE[DE$log2FoldChange > 1,]
+dn_reg_DE <- DE[DE$log2FoldChange < -1,]
 
-#get the list of genes of interest
-genesOfInterest <- rownames(DE)
-genesOfInterest <- sapply(strsplit(genesOfInterest, "\\."), function(x) x[[1]])
-genesOfInterest <- unique(genesOfInterest)
+#get the list of upregulated genes of interest
+up_reg_gene_names <- rownames(up_reg_DE)
+up_reg_gene_names <- sapply(strsplit(up_reg_gene_names, "\\."), function(x) x[[1]])
+up_reg_gene_names <- unique(up_reg_gene_names)
 
-#calculate enriched GO terms
-goResults <- gost(query = genesOfInterest, 
+#get the list of downregulated genes of interest
+dn_reg_gene_names <- rownames(dn_reg_DE)
+dn_reg_gene_names <- sapply(strsplit(dn_reg_gene_names, "\\."), function(x) x[[1]])
+dn_reg_gene_names <- unique(dn_reg_gene_names)
+
+#calculate enriched GO terms - upreg
+up_go_response <- gost(query = up_reg_gene_names, 
                      organism = 'mmusculus',
                   sources = c("GO"))
+gostplot(up_go_response, capped=FALSE)
+up_go_results = up_go_response$result
 
-goResults <- goResults$result[order(goResults$p_value),]
+goResults <- goResults[order(goResults$p_value),]
 go <- goResults[goResults$intersection_size < 100,]
 
 print(goResults)
