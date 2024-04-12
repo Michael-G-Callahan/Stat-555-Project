@@ -89,7 +89,7 @@ legend("topright", samplenames, text.col=col, bty="n")
 
 ## EDA - Heat map
 Here, we look at the TPM (trascripts per million) for our two cell lines (2 replicates each), and we pull out the top 100 genes with the highest variance of expression across samples. Then we plot their normalized expression levels across the samples using a heat map. We should see that the replicates within each cell line should have a more similar expression pattern than across cell lines.
-```{r preprocess}
+```{r heat map}
 library(pheatmap)
 
 #compute the variance of each gene across samples
@@ -101,7 +101,7 @@ pheatmap(tpm[selectedGenes,], scale = 'row', show_rownames = FALSE)
 
 ## EDA - PCA
 ...
-```{r preprocess}
+```{r PCA}
 library(stats)
 library(ggplot2)
 library(ellipse)
@@ -324,9 +324,9 @@ up_go_results <- up_go_results[order(up_go_results$p_value),]
 dn_go_results <- dn_go_results[order(dn_go_results$p_value),]
 # up_go_results <- up_go_results[up_go_results$intersection_size < 100,]
 
-kable(up_go_results[1:10,c(3:11)])
+kable(up_go_results[1:10,c(7:11)])
 
-kable(dn_go_results[1:10,c(3:11)])
+kable(dn_go_results[1:10,c(7:11)])
 
 # gostplot(up_go_response, capped = FALSE)
 # gostplot(dn_go_response, capped = FALSE)
