@@ -1,0 +1,12 @@
+INFO [2024-04-12 17:49:16] $x
+INFO [2024-04-12 17:49:16] list(lv_dif_ex_genes, DE2_dif_ex_genes)
+INFO [2024-04-12 17:49:16] 
+INFO [2024-04-12 17:49:16] $category.names
+INFO [2024-04-12 17:49:16] c("Limma-voom", "DESEQ2")
+INFO [2024-04-12 17:49:16] 
+INFO [2024-04-12 17:49:16] $filename
+INFO [2024-04-12 17:49:16] [1] "#venn_diagramm.png"
+INFO [2024-04-12 17:49:16] 
+INFO [2024-04-12 17:49:16] $output
+INFO [2024-04-12 17:49:16] [1] TRUE
+INFO [2024-04-12 17:49:16] 
