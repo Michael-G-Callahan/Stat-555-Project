@@ -42,7 +42,7 @@ for (row in 1:nrow(filtered_data_dir)) {
     count = 1
   }
   
-  filename = paste0(line,'_RNA_', count,'.tsv')
+  filename = filtered_data_dir$file_name[row]
   filename = file.path(current_project_path, "Data", filename)
   if ( ! file.exists ( filename ) ) download ( url , filename )
   
@@ -74,4 +74,117 @@ for (row in 1:nrow(filtered_data_dir)) {
   data <- read.delim(filename)
   assign(mem_name, data)
 }
+
+
+```
+
+```{r tpm data}
+#FYI - gene_ids are unique
+
+#CREATE A TPM Dataframe
+# Add prefixes to the tpm columns in each dataframe
+CFUE_RNA_1_tpm <- CFUE_RNA_1 %>% select(gene_id, length, CFUE_RNA_1_tpm = TPM)
+CFUE_RNA_2_tpm <- CFUE_RNA_2 %>% select(gene_id, CFUE_RNA_2_tpm = TPM)
+CMP_RNA_1_tpm <- CMP_RNA_1 %>% select(gene_id, CMP_RNA_1_tpm = TPM)
+CMP_RNA_2_tpm <- CMP_RNA_2 %>% select(gene_id, CMP_RNA_2_tpm = TPM)
+EBLST_RNA_1_tpm <- EBLST_RNA_1 %>% select(gene_id, EBLST_RNA_1 = TPM)
+EBLST_RNA_2_tpm <- EBLST_RNA_2 %>% select(gene_id, EBLST_RNA_2 = TPM)
+HSC_RNA_1_tpm <- HSC_RNA_1 %>% select(gene_id, HSC_RNA_1 = TPM)
+HSC_RNA_2_tpm <- HSC_RNA_2 %>% select(gene_id, HSC_RNA_2 = TPM)
+
+# Join the dataframes together on gene_id
+tpm <- inner_join(CFUE_RNA_1_tpm, CFUE_RNA_2_tpm, by = "gene_id") %>%
+       inner_join(CMP_RNA_1_tpm, by = "gene_id") %>%
+       inner_join(CMP_RNA_2_tpm, by = "gene_id") %>%
+       inner_join(EBLST_RNA_1_tpm, by = "gene_id") %>%
+       inner_join(EBLST_RNA_2_tpm, by = "gene_id") %>%
+       inner_join(HSC_RNA_1_tpm, by = "gene_id") %>%
+       inner_join(HSC_RNA_2_tpm, by = "gene_id")
+
+rm(
+  CFUE_RNA_1_tpm, CFUE_RNA_2_tpm,
+  CMP_RNA_1_tpm, CMP_RNA_2_tpm,
+  HSC_RNA_1_tpm, HSC_RNA_2_tpm,
+  EBLST_RNA_1_tpm, EBLST_RNA_2_tpm,
+  CMP_RNA_1, CMP_RNA_2,
+  CFUE_RNA_1, CFUE_RNA_2,
+  HSC_RNA_1, HSC_RNA_2,
+  EBLST_RNA_1, EBLST_RNA_2
+  )
+
+tpm <- tpm %>%
+  rename_at(vars(2:9), ~ sub("_tpm$", "", .))
+
+# Set 'column_name' as row names
+rownames(tpm) <- tpm$gene_id
+
+# Remove 'column_name' from dataframe (optional)
+tpm <- tpm[, -which(names(tpm) == 'gene_id')]
+
+#Drop all rows with only 0s
+tpm <- tpm[rowSums(tpm != 0) > 0, ]
+
+tpm_dir_path <- file.path(current_project_path, "Data", "tpm.Rdata")
+save(tpm, file = tpm_dir_path)
+```
+
+```{r count data}
+#FYI - gene_ids are unique
+
+#CREATE A TPM Dataframe
+# Add prefixes to the tpm columns in each dataframe
+CFUE_RNA_1_counts <- CFUE_RNA_1 %>% select(gene_id, length, CFUE_RNA_1_counts = expected_count)
+CFUE_RNA_2_counts <- CFUE_RNA_2 %>% select(gene_id, CFUE_RNA_2_counts = expected_count)
+CMP_RNA_1_counts <- CMP_RNA_1 %>% select(gene_id, CMP_RNA_1_counts = expected_count)
+CMP_RNA_2_counts <- CMP_RNA_2 %>% select(gene_id, CMP_RNA_2_counts = expected_count)
+EBLST_RNA_1_counts <- EBLST_RNA_1 %>% select(gene_id, EBLST_RNA_1 = expected_count)
+EBLST_RNA_2_counts <- EBLST_RNA_2 %>% select(gene_id, EBLST_RNA_2 = expected_count)
+HSC_RNA_1_counts <- HSC_RNA_1 %>% select(gene_id, HSC_RNA_1 = expected_count)
+HSC_RNA_2_counts <- HSC_RNA_2 %>% select(gene_id, HSC_RNA_2 = expected_count)
+
+# Join the dataframes together on gene_id
+countData <- inner_join(CFUE_RNA_1_counts, CFUE_RNA_2_counts, by = "gene_id") %>%
+       inner_join(CMP_RNA_1_counts, by = "gene_id") %>%
+       inner_join(CMP_RNA_2_counts, by = "gene_id") %>%
+       inner_join(EBLST_RNA_1_counts, by = "gene_id") %>%
+       inner_join(EBLST_RNA_2_counts, by = "gene_id") %>%
+       inner_join(HSC_RNA_1_counts, by = "gene_id") %>%
+       inner_join(HSC_RNA_2_counts, by = "gene_id")
+
+rm(
+  CFUE_RNA_1_counts, CFUE_RNA_2_counts,
+  CMP_RNA_1_counts, CMP_RNA_2_counts,
+  HSC_RNA_1_counts, HSC_RNA_2_counts,
+  EBLST_RNA_1_counts, EBLST_RNA_2_counts,
+  CMP_RNA_1, CMP_RNA_2,
+  CFUE_RNA_1, CFUE_RNA_2,
+  HSC_RNA_1, HSC_RNA_2,
+  EBLST_RNA_1, EBLST_RNA_2
+  )
+
+countData <- countData %>%
+  rename_at(vars(2:9), ~ sub("_counts$", "", .))
+
+countData <- mutate_if(countData, is.numeric, round)
+
+# Set 'column_name' as row names
+rownames(countData) <- countData$gene_id
+
+# Remove 'column_name' from dataframe (optional)
+countData <- countData[, -which(names(countData) == 'gene_id')]
+
+counts_dir_path <- file.path(current_project_path, "Data", "countData.Rdata")
+save(countData, file = counts_dir_path)
+```
+
+```{r colData}
+#Create a colData matrix
+colData = data.frame(
+  source_name = colnames(countData)[2:9],
+  group = c('CFUE', 'CFUE', 'CMP', 'CMP', 'EBLST', 'EBLST', 'HSC', 'HSC')
+  )
+colData$group = as.factor(colData$group)
+
+cols_dir_path <- file.path(current_project_path, "Data", "colData.Rdata")
+save(colData, file = cols_dir_path)
 ```

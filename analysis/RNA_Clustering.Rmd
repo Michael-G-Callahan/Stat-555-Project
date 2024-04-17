@@ -11,106 +11,55 @@ output:
 ```{r setup, include=FALSE}
 library(knitr)
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
 ```
 
 ## Load data
 
 ```{r Data load}
-# library(here)
-# library(dplyr)
-# 
-# current_project_path <- here()
-# 
-# file_path <- file.path(current_project_path, "Data", "CMP_RNA_1.tsv")
-# CMP_RNA_1 <- read.delim(file_path)
-# 
-# file_path <- file.path(current_project_path, "Data", "CMP_RNA_2.tsv")
-# CMP_RNA_2 <- read.delim(file_path)
-# 
-# file_path <- file.path(current_project_path, "Data", "CFU-E_RNA_1.tsv")
-# CFUE_RNA_1 <- read.delim(file_path)
-# 
-# file_path <- file.path(current_project_path, "Data", "CFU-E_RNA_2.tsv")
-# CFUE_RNA_2 <- read.delim(file_path)
-# 
-# file_path <- file.path(current_project_path, "Data", "Erythroblast_RNA_1.tsv")
-# EBLST_RNA_1 <- read.delim(file_path)
-# 
-# file_path <- file.path(current_project_path, "Data", "Erythroblast_RNA_2.tsv")
-# EBLST_RNA_2 <- read.delim(file_path)
-# 
-# file_path <- file.path(current_project_path, "Data", "HSC_RNA_1.tsv")
-# HSC_RNA_1 <- read.delim(file_path)
-# 
-# file_path <- file.path(current_project_path, "Data", "HSC_RNA_2.tsv")
-# HSC_RNA_2 <- read.delim(file_path)
-# ```
-# 
-# ## Data preprocessing
-# 
-# ```{r preprocess}
-# #FYI - gene_ids are unique
-# 
-# #CREATE A TPM Dataframe
-# # Add prefixes to the tpm columns in each dataframe
-# CFUE_RNA_1_tpm <- CFUE_RNA_1 %>% select(gene_id, CFUE_RNA_1_tpm = TPM)
-# CFUE_RNA_2_tpm <- CFUE_RNA_2 %>% select(gene_id, CFUE_RNA_2_tpm = TPM)
-# CMP_RNA_1_tpm <- CMP_RNA_1 %>% select(gene_id, CMP_RNA_1_tpm = TPM)
-# CMP_RNA_2_tpm <- CMP_RNA_2 %>% select(gene_id, CMP_RNA_2_tpm = TPM)
-# EBLST_RNA_1_tpm <- EBLST_RNA_1 %>% select(gene_id, EBLST_RNA_1 = TPM)
-# EBLST_RNA_2_tpm <- EBLST_RNA_2 %>% select(gene_id, EBLST_RNA_2 = TPM)
-# HSC_RNA_1_tpm <- HSC_RNA_1 %>% select(gene_id, HSC_RNA_1 = TPM)
-# HSC_RNA_2_tpm <- HSC_RNA_2 %>% select(gene_id, HSC_RNA_2 = TPM)
-# 
-# # Join the dataframes together on gene_id
-# tpm <- inner_join(CFUE_RNA_1_tpm, CFUE_RNA_2_tpm, by = "gene_id") %>%
-#        inner_join(CMP_RNA_1_tpm, by = "gene_id") %>%
-#        inner_join(CMP_RNA_2_tpm, by = "gene_id") %>%
-#        inner_join(EBLST_RNA_1_tpm, by = "gene_id") %>%
-#        inner_join(EBLST_RNA_2_tpm, by = "gene_id") %>%
-#        inner_join(HSC_RNA_1_tpm, by = "gene_id") %>%
-#        inner_join(HSC_RNA_2_tpm, by = "gene_id")
-# 
-# rm(
-#   CFUE_RNA_1_tpm, CFUE_RNA_2_tpm, 
-#   CMP_RNA_1_tpm, CMP_RNA_2_tpm,
-#   HSC_RNA_1_tpm, HSC_RNA_2_tpm,
-#   EBLST_RNA_1_tpm, EBLST_RNA_2_tpm,
-#   CMP_RNA_1, CMP_RNA_2,
-#   CFUE_RNA_1, CFUE_RNA_2,
-#   HSC_RNA_1, HSC_RNA_2,
-#   EBLST_RNA_1, EBLST_RNA_2
-#   )
-# 
-# tpm <- tpm %>%
-#   rename_at(vars(2:5), ~ sub("_tpm$", "", .))
-# 
-# 
-# # Set 'column_name' as row names
-# rownames(tpm) <- tpm$gene_id
-# 
-# # Remove 'column_name' from dataframe (optional)
-# tpm <- tpm[, -which(names(tpm) == 'gene_id')]
-# 
-# #Drop all rows with only 0s
-# tpm <- tpm[rowSums(tpm != 0) > 0, ]
-# 
-# save(tpm, file = 'all_tpm.Rdata')
+library(here)
+library(dplyr)
+
+current_project_path <- here()
+
+cols_dir_path <- file.path(current_project_path, "Data", "colData.Rdata")
+counts_dir_path <- file.path(current_project_path, "Data", "countData.Rdata")
+
+tpm_dir_path <- file.path(current_project_path, "Data", "tpm.Rdata")
+
+load(cols_dir_path)
+load(tpm_dir_path)
+load(counts_dir_path)
+
+tpm <- tpm %>% select(-length)
+```
+
+##Histogram overlay
+Here, we can see a density plot of the 4 samples being compared.
+```{r EDA}
+library(RColorBrewer)
+tpm_filtered <- tpm[rowSums(tpm != 0) > 0, ]
+samplenames <- colnames(tpm_filtered)
+tpm.cutoff <- log2(0.1)
+nsamples <- ncol(tpm_filtered)
+col <- brewer.pal(nsamples, "Paired")
+par(mfrow=c(1,1))
+plot(density(log(tpm_filtered[,1])), col=col[1], lwd=2, ylim=c(0,0.2), las=2, main="", xlab="")
+title(main="TPM density", xlab="Log-TPM")
+for (i in 2:nsamples){
+den <- density(log(tpm_filtered[,i]))
+lines(den$x, den$y, col=col[i], lwd=2)
+}
+legend("topright", samplenames, text.col=col, bty="n")
 ```
 
 ## Clustering
 ```{r cluster cell lines}
-library(here)
 library(stats)
-
-current_project_path <- here()
-
-file_path <- file.path(current_project_path, "Data", "all_tpm.Rdata")
-load(file_path)
 
 row_variances <- apply(tpm, 1, var)
 tpm <- tpm[order(row_variances, decreasing = TRUE)[1:5000], ]
-
 tpm <- log2(tpm + 1)
 
 d=dist(t(tpm))
@@ -119,6 +68,62 @@ plot(hc)
 
 ```
 
+## Advanced clustering and PCA 
+```{r normalized clustering}
+library(DESeq2)
+library(scales)
+library(ggplot2)
+
+selected_samples = c()
+selected_lines = c()
+
+selected_lines = c('CMP', 'CFUE', 'EBLST', 'HSC')
+
+selected_samples <- colData %>%
+  filter(group %in% selected_lines) %>%
+  mutate(group = factor(group, levels = selected_lines)) %>%
+  arrange(group) %>%
+  pull(source_name)
+
+designFormula <- "~ group"
+
+#create a DESeq dataset object from the count matrix and the colData
+dds <- DESeqDataSetFromMatrix(
+  countData = countData[,selected_samples],
+  colData = colData[match(selected_samples, colData$source_name),],
+  design = as.formula(designFormula)
+)
+
+#For each gene, we count the total number of reads for that gene in all samples
+#and remove those that don't have at least 1 read.
+dds <- dds[rowSums(DESeq2::counts(dds)) > 1, ]
+
+dds <- DESeq(dds)
+
+# Normalized cluster plot
+rld <- rlog(dds)
+de_pc <- DESeq2::plotPCA(rld, ntop = 500, intgroup = 'group') + ylim(-50, 50) + theme_bw()
+plot(de_pc)
+
+pc_coords <- ggplot_build(de_pc)$data[[1]]
+pc_data <- pc_coords[, c("x", "y")]
+rownames(pc_data) = selected_samples
+
+hc <- hclust(dist(pc_data))
+plot(hc)
+
+```
+
+## Correlation plots
+```{r cor plots}
+library(corrplot)
+correlationMatrix <- cor(tpm)
+corrplot(correlationMatrix, order = 'hclust', 
+         addrect = 2, addCoef.col = 'white', 
+         number.cex = 0.7) 
+```
+
+##PCA -- TPM
 ```{r Plot cell lines}
 library(ggplot2)
 
@@ -151,3 +156,14 @@ ggplot(pc, aes(x = PC1, y = PC2, color = group)) +
 summary(pcaResults)
 ```
 
+## EDA - Heat map
+Here, we look at the TPM (trascripts per million) for our two cell lines (2 replicates each), and we pull out the top 100 genes with the highest variance of expression across samples. Then we plot their normalized expression levels across the samples using a heat map. We should see that the replicates within each cell line should have a more similar expression pattern than across cell lines.
+```{r heat map}
+library(pheatmap)
+
+#compute the variance of each gene across samples
+variances <- apply(tpm, 1, var)
+colData$group = as.character(colData$group)
+selectedGenes <- order(variances, decreasing = TRUE)[1:100]
+pheatmap(tpm[selectedGenes,], scale = 'row', show_rownames = FALSE, cluster_cols = FALSE)
+```

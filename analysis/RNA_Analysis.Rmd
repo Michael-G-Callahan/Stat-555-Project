@@ -1,0 +1,125 @@
+---
+title: "RNA Analysis"
+author: "Michael Callahan"
+date: "2024-04-03"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+```
+
+## Load data
+
+```{r Data load}
+library(here)
+library(dplyr)
+
+current_project_path <- here()
+
+cols_dir_path <- file.path(current_project_path, "Data", "colData.Rdata")
+counts_dir_path <- file.path(current_project_path, "Data", "countData.Rdata")
+# tpm_dir_path <- file.path(current_project_path, "Data", "tpm.Rdata")
+
+load(cols_dir_path)
+load(counts_dir_path)
+
+countData <- countData %>% select(-length)
+```
+
+# Differential Expression Analysis - CMP/CFUE setup
+```{r setup 1}
+helper_dir_path <- file.path(current_project_path, "analysis", "Helper_functions.R")
+source(helper_dir_path)
+
+selected_lines = c('CMP', 'CFUE')
+
+selected_samples <- colData %>%
+  filter(group %in% selected_lines) %>%
+  mutate(group = factor(group, levels = selected_lines)) %>%
+  arrange(group) %>%
+  pull(source_name)
+```
+
+## DESeq2
+```{R DESE2 1}
+DEresults = get_DE_results(selected_lines, colData, countData)
+
+DEresults_print <- DEresults[1:10,]
+kable(DEresults_print)
+```
+
+## Limma-VOOM
+```{r limma 1}
+lv_results = get_lv_results(selected_lines, colData, countData)
+lv_results_print <- lv_results[1:10,]
+kable(lv_results_print)
+```
+
+## Comparison
+```{r lv deseq2 compare 1}
+compare_de_lv(DEresults, lv_results)
+```
+
+## GO term analysis
+```{r GO upreg 1}
+go_results = get_GO_results(DEresults)
+
+kable(go_results$up_reg[1:10,c(7:11)])
+kable(go_results$down_reg[1:10,c(7:11)])
+```
+
+# Differential Expression Analysis - HSC/CMP setup
+```{r setup 2}
+selected_lines = c('HSC', 'CMP')
+
+selected_samples <- colData %>%
+  filter(group %in% selected_lines) %>%
+  mutate(group = factor(group, levels = selected_lines)) %>%
+  arrange(group) %>%
+  pull(source_name)
+```
+
+## DESeq2
+```{R DESE2 2}
+DEresults = get_DE_results(selected_lines, colData, countData)
+DEresults_print <- DEresults[1:10,]
+kable(DEresults_print)
+```
+
+## GO term analysis
+```{r GO upreg 2}
+go_results = get_GO_results(DEresults)
+
+kable(go_results$up_reg[1:10,c(7:11)])
+kable(go_results$down_reg[1:10,c(7:11)])
+```
+
+# Differential Expression Analysis - CMP/EBLST setup
+```{r setup 3}
+selected_lines = c('CMP', 'EBLST')
+
+selected_samples <- colData %>%
+  filter(group %in% selected_lines) %>%
+  mutate(group = factor(group, levels = selected_lines)) %>%
+  arrange(group) %>%
+  pull(source_name)
+```
+
+## DESeq2
+```{R DESE2 3}
+DEresults = get_DE_results(selected_lines, colData, countData)
+DEresults_print <- DEresults[1:10,]
+kable(DEresults_print)
+```
+
+## GO term analysis
+```{r GO upreg 3}
+go_results = get_GO_results(DEresults)
+
+kable(go_results$up_reg[1:10,c(7:11)])
+kable(go_results$down_reg[1:10,c(7:11)])
+```
