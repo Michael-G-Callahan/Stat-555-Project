@@ -1,7 +1,6 @@
 library(DESeq2)
 library(knitr)
 library(ggplot2)
-library(ggplot2)
 library(edgeR)
 library(VennDiagram)
 library(gridExtra)
@@ -44,20 +43,44 @@ get_DE_results <- function(selected_lines, colData, countData){
 
 
   #Pvalue plot
-  pval_plot <- ggplot(data = as.data.frame(DEresults), aes(x = pvalue)) +
+  pval_plot <- ggplot(data = as.data.frame(DEresults), aes(x = padj)) +
     geom_histogram(bins = 100)
   plot(pval_plot)
 
   #Normalized counts plot
+  new_x_labels = sub("_RNA", "", selected_samples)
+
   plotRLE(DESeq2::counts(dds, normalized = TRUE),
           outline=FALSE, ylim=c(-4, 4),
           col = as.numeric(colData$group),
-          main = 'Normalized Counts')
+          main = 'Normalized Counts',
+          xaxt = "n"
+          )
+  axis(side = 1, at = 1:4, labels = new_x_labels)
 
   current_project_path <- here()
   DE_dir_path <- file.path(current_project_path, "Data",
                            paste0("DE_results_",selected_lines[1], "_", selected_lines[2],".Rdata"))
   save(DEresults, file = DE_dir_path)
+
+  #Volcano plot
+  DE_data <- DEresults@listData %>%
+    as.data.frame %>%
+    mutate(diffexpressed = "NO") %>%
+    mutate(diffexpressed = ifelse(log2FoldChange > 0.6 & padj < 0.01, "UP", diffexpressed)) %>%
+    mutate(diffexpressed = ifelse(log2FoldChange < -0.6 & padj < 0.01, "DOWN", diffexpressed)) %>%
+    mutate(gene_symbol = DEresults@rownames)
+
+
+  volcano_plot <- ggplot(data = DE_data, aes(x = log2FoldChange, y = -log10(padj), col = diffexpressed)) +
+    geom_vline(xintercept = c(-0.6, 0.6), col = "gray", linetype = 'dashed') +
+    geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') +
+    geom_point(size = 2) +
+    coord_cartesian(ylim = c(0, 50), xlim = c(-10, 10)) +
+    scale_color_manual(values = c("#00AFBB", "grey", "#FFDB6D"),
+                       labels = c("Downregulated", "Not significant", "Upregulated")) +
+    ggtitle(paste("Volcano Plot:", selected_lines[1], "vs.", selected_lines[2]))
+  plot(volcano_plot)
 
   return(DEresults)
 }
@@ -87,7 +110,7 @@ get_lv_results <- function(selected_lines, colData, countData){
   top.table <- topTable(tmp, sort.by = "P", n = Inf)
 
 
-  pval_plot <- ggplot(data = top.table, aes(x = P.Value)) +
+  pval_plot <- ggplot(data = top.table, aes(x = adj.P.Val)) +
     geom_histogram(bins = 100)
   plot(pval_plot)
 
@@ -159,6 +182,19 @@ get_GO_results <- function(DE_results){
     mutate(f1 = 2*(precision * recall) / (precision + recall)) %>%
     mutate(f2 = 2*(precision * recall) / (400*precision + recall)) %>%
     arrange(desc(f1))
+
+  current_project_path <- here()
+  up_go_path <- file.path(current_project_path, "Data",
+                             paste0("GO_term_up_",selected_lines[1], "_", selected_lines[2],".csv"))
+
+  dn_go_path <- file.path(current_project_path, "Data",
+                          paste0("GO_term_dn_",selected_lines[1], "_", selected_lines[2],".csv"))
+
+  up_go_results <- subset(up_go_results, select = -parents)
+  dn_go_results <- subset(dn_go_results, select = -parents)
+
+  write.csv(up_go_results, file = up_go_path)
+  write.csv(dn_go_results, file = dn_go_path)
 
   return(list(up_reg = up_go_results, down_reg = dn_go_results))
 }

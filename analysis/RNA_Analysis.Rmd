@@ -13,7 +13,6 @@ knitr::opts_chunk$set(warning = FALSE)
 ```
 
 ## Load data
-
 ```{r Data load}
 library(here)
 library(dplyr)
@@ -31,11 +30,12 @@ countData <- countData %>% select(-length)
 ```
 
 # Differential Expression Analysis - CMP/CFUE setup
+CMP is denom
 ```{r setup 1}
 helper_dir_path <- file.path(current_project_path, "analysis", "Helper_functions.R")
 source(helper_dir_path)
 
-selected_lines = c('CMP', 'CFUE')
+selected_lines = c('CFUE', 'CMP')
 
 selected_samples <- colData %>%
   filter(group %in% selected_lines) %>%
@@ -45,7 +45,7 @@ selected_samples <- colData %>%
 ```
 
 ## DESeq2
-```{R DESE2 1}
+```{R DESEQ2 1}
 DEresults = get_DE_results(selected_lines, colData, countData)
 
 DEresults_print <- DEresults[1:10,]
@@ -54,6 +54,7 @@ kable(DEresults_print)
 
 ## Limma-VOOM
 ```{r limma 1}
+debug(get_lv_results)
 lv_results = get_lv_results(selected_lines, colData, countData)
 lv_results_print <- lv_results[1:10,]
 kable(lv_results_print)
@@ -73,8 +74,9 @@ kable(go_results$down_reg[1:10,c(7:11)])
 ```
 
 # Differential Expression Analysis - HSC/CMP setup
+HSC is denominator.
 ```{r setup 2}
-selected_lines = c('HSC', 'CMP')
+selected_lines = c('CMP', 'HSC')
 
 selected_samples <- colData %>%
   filter(group %in% selected_lines) %>%
@@ -84,7 +86,7 @@ selected_samples <- colData %>%
 ```
 
 ## DESeq2
-```{R DESE2 2}
+```{R DESEQ2 2}
 DEresults = get_DE_results(selected_lines, colData, countData)
 DEresults_print <- DEresults[1:10,]
 kable(DEresults_print)
@@ -99,8 +101,9 @@ kable(go_results$down_reg[1:10,c(7:11)])
 ```
 
 # Differential Expression Analysis - CMP/EBLST setup
+CMP is denom
 ```{r setup 3}
-selected_lines = c('CMP', 'EBLST')
+selected_lines = c('EBLST', 'CMP')
 
 selected_samples <- colData %>%
   filter(group %in% selected_lines) %>%
@@ -110,7 +113,7 @@ selected_samples <- colData %>%
 ```
 
 ## DESeq2
-```{R DESE2 3}
+```{R DESEQ2 3}
 DEresults = get_DE_results(selected_lines, colData, countData)
 DEresults_print <- DEresults[1:10,]
 kable(DEresults_print)
